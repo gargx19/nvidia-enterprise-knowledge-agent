@@ -176,7 +176,7 @@ export default function Home() {
 
                     {/* Sources */}
                     {message.role === "assistant" &&
-                      message.sources &&
+                      Array.isArray(message.sources) &&
                       message.sources.length > 0 && (
                         <div className="mt-6 border-t border-white/10 pt-5">
                           <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">

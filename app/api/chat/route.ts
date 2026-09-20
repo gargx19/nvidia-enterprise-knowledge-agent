@@ -187,23 +187,28 @@ export async function POST(request: NextRequest) {
 
     const answer = cleanAnswer(rawAnswer);
 
-    const normalizedAnswer = answer.toLowerCase();
+    const normalizedAnswer = answer
+      .toLowerCase()
+      .replace(/[’‘]/g, "'")
+      .trim();
 
     const isNotFound =
-      normalizedAnswer.includes(
+      normalizedAnswer.startsWith(
         "i couldn't find that information in the nvidia knowledge base"
       ) ||
-      normalizedAnswer.includes(
+      normalizedAnswer.startsWith(
         "i could not find that information in the nvidia knowledge base"
+      ) ||
+      (
+        normalizedAnswer.includes("couldn't find") &&
+        normalizedAnswer.includes("nvidia knowledge base")
+      ) ||
+      (
+        normalizedAnswer.includes("could not find") &&
+        normalizedAnswer.includes("nvidia knowledge base")
       ) ||
       normalizedAnswer.includes(
         "information was not found in the nvidia knowledge base"
-      ) ||
-      normalizedAnswer.includes(
-        "couldn't find that information"
-      ) ||
-      normalizedAnswer.includes(
-        "could not find that information"
       );
 
     const isOutOfScope =
@@ -213,8 +218,9 @@ export async function POST(request: NextRequest) {
       normalizedAnswer.includes(
         "i am the nvidia enterprise knowledge agent"
       ) ||
-      normalizedAnswer.includes(
-        "only answer questions about nvidia"
+      (
+        normalizedAnswer.includes("only answer questions") &&
+        normalizedAnswer.includes("nvidia")
       );
 
     const sources =
@@ -222,12 +228,8 @@ export async function POST(request: NextRequest) {
         ? []
         : extractSourcesFromText(rawAnswer);
 
-    const finalAnswer = isNotFound
-      ? "I couldn't find that information in the NVIDIA knowledge base."
-      : answer;
-
     return NextResponse.json({
-      answer: finalAnswer,
+      answer,
       sources,
     });
   } catch (error) {
