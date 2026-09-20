@@ -272,14 +272,19 @@ export async function POST(request: NextRequest) {
 
     const answer = cleanAnswer(rawAnswer);
 
-    const sources = isDataUnavailable(answer, rawAnswer)
-      ? []
-      : extractSourcesFromText(rawAnswer);
+    // Foundry can attach the document it retrieved even when the agent says
+    // that the question is not answered by that document. Treat that as an
+    // ungrounded response: never send those retrieved documents to the UI.
+    const hasKnowledgeBaseAnswer = !isDataUnavailable(answer, rawAnswer);
+    const sources = hasKnowledgeBaseAnswer
+      ? extractSourcesFromText(rawAnswer)
+      : [];
 
     return NextResponse.json(
       {
         answer,
         sources,
+        hasKnowledgeBaseAnswer,
       },
       {
         headers: {

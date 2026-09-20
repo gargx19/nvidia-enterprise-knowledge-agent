@@ -14,6 +14,7 @@ type Message = {
   role: "user" | "assistant";
   content: string;
   sources?: Source[];
+  hasKnowledgeBaseAnswer?: boolean;
 };
 
 const suggestions = [
@@ -131,7 +132,11 @@ export default function Home() {
       }
 
       const answer = data.answer || "";
-      const unavailable = isDataUnavailable(answer);
+      // The server sees the unmodified Foundry response, including its
+      // retrieval metadata, so it is the authority on whether sources apply.
+      // Keep the text check as a fallback for older or malformed responses.
+      const hasKnowledgeBaseAnswer =
+        data.hasKnowledgeBaseAnswer === true && !isDataUnavailable(answer);
       const rawSources: Source[] = Array.isArray(data.sources) ? data.sources : [];
       const validSources = rawSources.filter((s) => {
         if (!s || !s.title) return false;
@@ -143,7 +148,7 @@ export default function Home() {
           clean !== "unknown"
         );
       });
-      const sources = unavailable ? [] : validSources;
+      const sources = hasKnowledgeBaseAnswer ? validSources : [];
 
       setMessages((prev) => [
         ...prev,
@@ -151,6 +156,7 @@ export default function Home() {
           role: "assistant",
           content: answer,
           sources,
+          hasKnowledgeBaseAnswer,
         },
       ]);
     } catch (error) {
@@ -263,6 +269,7 @@ export default function Home() {
                     {(() => {
                       if (
                         message.role !== "assistant" ||
+                        message.hasKnowledgeBaseAnswer === false ||
                         isDataUnavailable(message.content)
                       ) {
                         return null;
