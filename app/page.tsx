@@ -163,7 +163,13 @@ export default function Home() {
                         : "NVIDIA Agent"}
                     </div>
 
-                    <div className="whitespace-pre-wrap text-sm leading-7 text-white/90">
+                    <div
+                      className={
+                        message.role === "user"
+                          ? "whitespace-pre-wrap text-sm leading-7 text-black"
+                          : "whitespace-pre-wrap text-sm leading-7 text-white/90"
+                      }
+                    >
                       {message.content}
                     </div>
 
