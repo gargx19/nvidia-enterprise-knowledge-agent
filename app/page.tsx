@@ -2,9 +2,15 @@
 
 import { FormEvent, useState } from "react";
 
+type Source = {
+  id: string;
+  title: string;
+};
+
 type Message = {
   role: "user" | "assistant";
   content: string;
+  sources?: Source[];
 };
 
 const suggestions = [
@@ -25,7 +31,10 @@ export default function Home() {
 
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: text },
+      {
+        role: "user",
+        content: text,
+      },
     ]);
 
     setInput("");
@@ -45,7 +54,9 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Something went wrong.");
+        throw new Error(
+          data.error || "Something went wrong."
+        );
       }
 
       setMessages((prev) => [
@@ -53,6 +64,7 @@ export default function Home() {
         {
           role: "assistant",
           content: data.answer,
+          sources: data.sources ?? [],
         },
       ]);
     } catch (error) {
@@ -71,7 +83,9 @@ export default function Home() {
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
     await sendMessage();
   }
@@ -85,6 +99,7 @@ export default function Home() {
             <div className="text-xl font-bold tracking-tight">
               NVIDIA
             </div>
+
             <div className="text-xs text-white/40">
               Enterprise Knowledge Agent
             </div>
@@ -98,6 +113,7 @@ export default function Home() {
         {/* Main */}
         <section className="flex flex-1 flex-col items-center py-16">
           <div className="w-full max-w-4xl">
+
             {/* Hero */}
             {messages.length === 0 && (
               <div className="mb-12 text-center">
@@ -111,7 +127,8 @@ export default function Home() {
 
                 <p className="mx-auto mt-5 max-w-2xl text-lg text-white/50">
                   Search NVIDIA enterprise documentation using an
-                  AI-powered knowledge agent grounded in trusted sources.
+                  AI-powered knowledge agent grounded in trusted
+                  sources.
                 </p>
               </div>
             )}
@@ -134,17 +151,62 @@ export default function Home() {
                         : "max-w-[90%] rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-5"
                     }
                   >
-                    <div className="mb-2 text-xs font-medium uppercase tracking-wider text-black/50">
-                      {message.role === "user" ? "You" : "NVIDIA Agent"}
+                    <div
+                      className={
+                        message.role === "user"
+                          ? "mb-2 text-xs font-medium uppercase tracking-wider text-black/50"
+                          : "mb-2 text-xs font-medium uppercase tracking-wider text-white/40"
+                      }
+                    >
+                      {message.role === "user"
+                        ? "You"
+                        : "NVIDIA Agent"}
                     </div>
 
-                    <div className="whitespace-pre-wrap text-sm leading-7">
+                    <div className="whitespace-pre-wrap text-sm leading-7 text-white/90">
                       {message.content}
                     </div>
+
+                    {/* Sources */}
+                    {message.role === "assistant" &&
+                      message.sources &&
+                      message.sources.length > 0 && (
+                        <div className="mt-6 border-t border-white/10 pt-5">
+                          <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">
+                            Sources
+                          </div>
+
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {message.sources.map((source) => (
+                              <div
+                                key={source.id}
+                                className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm">
+                                    📄
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <div className="truncate text-sm font-medium text-white/85">
+                                      {source.title}
+                                    </div>
+
+                                    <div className="mt-1 text-xs text-white/35">
+                                      NVIDIA knowledge source
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
                 </div>
               ))}
 
+              {/* Loading */}
               {loading && (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-5">
                   <div className="flex items-center gap-3 text-sm text-white/50">
@@ -171,18 +233,25 @@ export default function Home() {
             )}
 
             {/* Input */}
-            <form onSubmit={handleSubmit} className="mt-10">
+            <form
+              onSubmit={handleSubmit}
+              className="mt-10"
+            >
               <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 focus-within:border-white/25">
                 <input
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) =>
+                    setInput(e.target.value)
+                  }
                   placeholder="Ask about NVIDIA AI Enterprise, NIM, deployment..."
                   className="flex-1 bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-white/30"
                 />
 
                 <button
                   type="submit"
-                  disabled={loading || !input.trim()}
+                  disabled={
+                    loading || !input.trim()
+                  }
                   className="rounded-xl bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   Ask
@@ -191,7 +260,8 @@ export default function Home() {
             </form>
 
             <p className="mt-4 text-center text-xs text-white/25">
-              Answers are grounded in the connected NVIDIA knowledge base.
+              Answers are grounded in the connected NVIDIA
+              knowledge base.
             </p>
           </div>
         </section>
