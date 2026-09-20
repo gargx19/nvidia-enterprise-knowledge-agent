@@ -21,7 +21,7 @@ const suggestions = [
 ];
 
 function isDataUnavailable(content?: string): boolean {
-  if (!content) return true;
+  if (!content) return false;
   const s = content
     .toLowerCase()
     .replace(/[’‘]/g, "'")
@@ -34,24 +34,57 @@ function isDataUnavailable(content?: string): boolean {
     s.startsWith("i couldn't find") ||
     s.startsWith("i could not find") ||
     s.startsWith("i cannot find") ||
+    s.startsWith("i can't find") ||
     s.startsWith("i am unable to find") ||
     s.startsWith("i'm unable to find") ||
+    s.startsWith("the information was not found") ||
+    s.startsWith("the requested information was not found") ||
+    s.startsWith("the requested information is not available") ||
+    s.startsWith("no information was found") ||
+    s.startsWith("there is no information") ||
+    s.startsWith("no information is available") ||
+    s.startsWith("i don't have information") ||
+    s.startsWith("i do not have information") ||
     s.includes("couldn't find that information") ||
     s.includes("could not find that information") ||
+    s.includes("cannot find that information") ||
+    s.includes("unable to find that information") ||
+    s.includes("couldn't find any information") ||
+    s.includes("could not find any information") ||
     s.includes("information was not found") ||
+    s.includes("information is not found") ||
     s.includes("information is not available") ||
+    s.includes("information was not available") ||
     s.includes("data is not available") ||
     s.includes("data was not found") ||
+    s.includes("not found in the nvidia knowledge base") ||
+    s.includes("not found in the knowledge base") ||
+    s.includes("not available in the nvidia knowledge base") ||
+    s.includes("not available in the knowledge base") ||
+    s.includes("not present in the nvidia knowledge base") ||
+    s.includes("not present in the connected nvidia knowledge base") ||
+    s.includes("not present in the knowledge base") ||
+    s.includes("does not contain information") ||
+    s.includes("doesn't contain information") ||
+    s.includes("do not have information") ||
+    s.includes("don't have information") ||
+    s.includes("no mention of") ||
     (s.includes("couldn't find") && s.includes("knowledge base")) ||
     (s.includes("could not find") && s.includes("knowledge base")) ||
     (s.includes("not found") && s.includes("knowledge base")) ||
     (s.includes("not available") && s.includes("knowledge base")) ||
     (s.includes("no information") && s.includes("knowledge base")) ||
-    s.includes("not present in the nvidia knowledge base") ||
-    s.includes("not present in the connected nvidia knowledge base") ||
+    (s.includes("not covered") && s.includes("knowledge base")) ||
+    (s.includes("does not contain") && s.includes("knowledge base")) ||
+    (s.includes("doesn't contain") && s.includes("knowledge base")) ||
+    (s.includes("do not have") && s.includes("knowledge base")) ||
+    (s.includes("don't have") && s.includes("knowledge base")) ||
     s.includes("i'm the nvidia enterprise knowledge agent") ||
     s.includes("i am the nvidia enterprise knowledge agent") ||
-    (s.includes("only answer questions") && s.includes("nvidia"))
+    (s.includes("only answer questions") && s.includes("nvidia")) ||
+    (s.includes("only assist with questions") && s.includes("nvidia")) ||
+    s.includes("outside the scope") ||
+    s.includes("out of scope")
   );
 }
 
@@ -97,7 +130,18 @@ export default function Home() {
 
       const answer = data.answer || "";
       const unavailable = isDataUnavailable(answer);
-      const sources = unavailable ? [] : (data.sources ?? []);
+      const rawSources: Source[] = Array.isArray(data.sources) ? data.sources : [];
+      const validSources = rawSources.filter((s) => {
+        if (!s || !s.title) return false;
+        const clean = s.title.toLowerCase().trim();
+        return (
+          clean !== "source" &&
+          clean !== "source.pdf" &&
+          clean !== "sources" &&
+          clean !== "unknown"
+        );
+      });
+      const sources = unavailable ? [] : validSources;
 
       setMessages((prev) => [
         ...prev,
@@ -214,17 +258,39 @@ export default function Home() {
                     </div>
 
                     {/* Sources */}
-                    {message.role === "assistant" &&
-                      !isDataUnavailable(message.content) &&
-                      Array.isArray(message.sources) &&
-                      message.sources.length > 0 && (
+                    {(() => {
+                      if (
+                        message.role !== "assistant" ||
+                        isDataUnavailable(message.content)
+                      ) {
+                        return null;
+                      }
+
+                      const validSources = (message.sources ?? []).filter(
+                        (s) => {
+                          if (!s || !s.title) return false;
+                          const clean = s.title.toLowerCase().trim();
+                          return (
+                            clean !== "source" &&
+                            clean !== "source.pdf" &&
+                            clean !== "sources" &&
+                            clean !== "unknown"
+                          );
+                        }
+                      );
+
+                      if (validSources.length === 0) {
+                        return null;
+                      }
+
+                      return (
                         <div className="mt-6 border-t border-white/10 pt-5">
                           <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">
                             Sources
                           </div>
 
                           <div className="grid gap-2 sm:grid-cols-2">
-                            {message.sources.map((source) =>
+                            {validSources.map((source) =>
                               source.url ? (
                                 <a
                                   key={source.id}
@@ -285,7 +351,8 @@ export default function Home() {
                             )}
                           </div>
                         </div>
-                      )}
+                      );
+                    })()}
                   </div>
                 </div>
               ))}

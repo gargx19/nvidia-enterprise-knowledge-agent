@@ -99,6 +99,16 @@ function extractSourcesFromText(text: string): Source[] {
     // Strip leading path if present (e.g. folder/01-AI-Enterprise.pdf)
     const title = rawTitle.split("/").pop()?.trim() || rawTitle;
 
+    const lowerTitle = title.toLowerCase();
+    if (
+      lowerTitle === "source" ||
+      lowerTitle === "source.pdf" ||
+      lowerTitle === "sources" ||
+      lowerTitle === "unknown"
+    ) {
+      continue;
+    }
+
     if (!title || seen.has(title)) continue;
 
     seen.add(title);
@@ -128,24 +138,57 @@ function isDataUnavailable(answer: string, rawAnswer?: string): boolean {
       s.startsWith("i couldn't find") ||
       s.startsWith("i could not find") ||
       s.startsWith("i cannot find") ||
+      s.startsWith("i can't find") ||
       s.startsWith("i am unable to find") ||
       s.startsWith("i'm unable to find") ||
+      s.startsWith("the information was not found") ||
+      s.startsWith("the requested information was not found") ||
+      s.startsWith("the requested information is not available") ||
+      s.startsWith("no information was found") ||
+      s.startsWith("there is no information") ||
+      s.startsWith("no information is available") ||
+      s.startsWith("i don't have information") ||
+      s.startsWith("i do not have information") ||
       s.includes("couldn't find that information") ||
       s.includes("could not find that information") ||
+      s.includes("cannot find that information") ||
+      s.includes("unable to find that information") ||
+      s.includes("couldn't find any information") ||
+      s.includes("could not find any information") ||
       s.includes("information was not found") ||
+      s.includes("information is not found") ||
       s.includes("information is not available") ||
+      s.includes("information was not available") ||
       s.includes("data is not available") ||
       s.includes("data was not found") ||
+      s.includes("not found in the nvidia knowledge base") ||
+      s.includes("not found in the knowledge base") ||
+      s.includes("not available in the nvidia knowledge base") ||
+      s.includes("not available in the knowledge base") ||
+      s.includes("not present in the nvidia knowledge base") ||
+      s.includes("not present in the connected nvidia knowledge base") ||
+      s.includes("not present in the knowledge base") ||
+      s.includes("does not contain information") ||
+      s.includes("doesn't contain information") ||
+      s.includes("do not have information") ||
+      s.includes("don't have information") ||
+      s.includes("no mention of") ||
       (s.includes("couldn't find") && s.includes("knowledge base")) ||
       (s.includes("could not find") && s.includes("knowledge base")) ||
       (s.includes("not found") && s.includes("knowledge base")) ||
       (s.includes("not available") && s.includes("knowledge base")) ||
       (s.includes("no information") && s.includes("knowledge base")) ||
-      s.includes("not present in the nvidia knowledge base") ||
-      s.includes("not present in the connected nvidia knowledge base") ||
+      (s.includes("not covered") && s.includes("knowledge base")) ||
+      (s.includes("does not contain") && s.includes("knowledge base")) ||
+      (s.includes("doesn't contain") && s.includes("knowledge base")) ||
+      (s.includes("do not have") && s.includes("knowledge base")) ||
+      (s.includes("don't have") && s.includes("knowledge base")) ||
       s.includes("i'm the nvidia enterprise knowledge agent") ||
       s.includes("i am the nvidia enterprise knowledge agent") ||
-      (s.includes("only answer questions") && s.includes("nvidia"))
+      (s.includes("only answer questions") && s.includes("nvidia")) ||
+      (s.includes("only assist with questions") && s.includes("nvidia")) ||
+      s.includes("outside the scope") ||
+      s.includes("out of scope")
     );
   };
 
