@@ -20,6 +20,41 @@ const suggestions = [
   "How is NVIDIA AI Enterprise deployed?",
 ];
 
+function isDataUnavailable(content?: string): boolean {
+  if (!content) return true;
+  const s = content
+    .toLowerCase()
+    .replace(/[’‘]/g, "'")
+    .trim();
+
+  return (
+    s.startsWith("i couldn't find that information in the nvidia knowledge base") ||
+    s.startsWith("i could not find that information in the nvidia knowledge base") ||
+    s.startsWith("the information was not found in the nvidia knowledge base") ||
+    s.startsWith("i couldn't find") ||
+    s.startsWith("i could not find") ||
+    s.startsWith("i cannot find") ||
+    s.startsWith("i am unable to find") ||
+    s.startsWith("i'm unable to find") ||
+    s.includes("couldn't find that information") ||
+    s.includes("could not find that information") ||
+    s.includes("information was not found") ||
+    s.includes("information is not available") ||
+    s.includes("data is not available") ||
+    s.includes("data was not found") ||
+    (s.includes("couldn't find") && s.includes("knowledge base")) ||
+    (s.includes("could not find") && s.includes("knowledge base")) ||
+    (s.includes("not found") && s.includes("knowledge base")) ||
+    (s.includes("not available") && s.includes("knowledge base")) ||
+    (s.includes("no information") && s.includes("knowledge base")) ||
+    s.includes("not present in the nvidia knowledge base") ||
+    s.includes("not present in the connected nvidia knowledge base") ||
+    s.includes("i'm the nvidia enterprise knowledge agent") ||
+    s.includes("i am the nvidia enterprise knowledge agent") ||
+    (s.includes("only answer questions") && s.includes("nvidia"))
+  );
+}
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -60,12 +95,16 @@ export default function Home() {
         );
       }
 
+      const answer = data.answer || "";
+      const unavailable = isDataUnavailable(answer);
+      const sources = unavailable ? [] : (data.sources ?? []);
+
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.answer,
-          sources: data.sources ?? [],
+          content: answer,
+          sources,
         },
       ]);
     } catch (error) {
@@ -176,6 +215,7 @@ export default function Home() {
 
                     {/* Sources */}
                     {message.role === "assistant" &&
+                      !isDataUnavailable(message.content) &&
                       Array.isArray(message.sources) &&
                       message.sources.length > 0 && (
                         <div className="mt-6 border-t border-white/10 pt-5">

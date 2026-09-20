@@ -113,6 +113,45 @@ function extractSourcesFromText(text: string): Source[] {
   return sources;
 }
 
+function isDataUnavailable(answer: string, rawAnswer?: string): boolean {
+  const check = (text: string) => {
+    if (!text) return false;
+    const s = text
+      .toLowerCase()
+      .replace(/[’‘]/g, "'")
+      .trim();
+
+    return (
+      s.startsWith("i couldn't find that information in the nvidia knowledge base") ||
+      s.startsWith("i could not find that information in the nvidia knowledge base") ||
+      s.startsWith("the information was not found in the nvidia knowledge base") ||
+      s.startsWith("i couldn't find") ||
+      s.startsWith("i could not find") ||
+      s.startsWith("i cannot find") ||
+      s.startsWith("i am unable to find") ||
+      s.startsWith("i'm unable to find") ||
+      s.includes("couldn't find that information") ||
+      s.includes("could not find that information") ||
+      s.includes("information was not found") ||
+      s.includes("information is not available") ||
+      s.includes("data is not available") ||
+      s.includes("data was not found") ||
+      (s.includes("couldn't find") && s.includes("knowledge base")) ||
+      (s.includes("could not find") && s.includes("knowledge base")) ||
+      (s.includes("not found") && s.includes("knowledge base")) ||
+      (s.includes("not available") && s.includes("knowledge base")) ||
+      (s.includes("no information") && s.includes("knowledge base")) ||
+      s.includes("not present in the nvidia knowledge base") ||
+      s.includes("not present in the connected nvidia knowledge base") ||
+      s.includes("i'm the nvidia enterprise knowledge agent") ||
+      s.includes("i am the nvidia enterprise knowledge agent") ||
+      (s.includes("only answer questions") && s.includes("nvidia"))
+    );
+  };
+
+  return check(answer) || (rawAnswer ? check(rawAnswer) : false);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { message } = await request.json();
@@ -187,46 +226,9 @@ export async function POST(request: NextRequest) {
 
     const answer = cleanAnswer(rawAnswer);
 
-    const normalizedAnswer = answer
-      .toLowerCase()
-      .replace(/[’‘]/g, "'")
-      .trim();
-
-    const isNotFound =
-      normalizedAnswer.startsWith(
-        "i couldn't find that information in the nvidia knowledge base"
-      ) ||
-      normalizedAnswer.startsWith(
-        "i could not find that information in the nvidia knowledge base"
-      ) ||
-      (
-        normalizedAnswer.includes("couldn't find") &&
-        normalizedAnswer.includes("nvidia knowledge base")
-      ) ||
-      (
-        normalizedAnswer.includes("could not find") &&
-        normalizedAnswer.includes("nvidia knowledge base")
-      ) ||
-      normalizedAnswer.includes(
-        "information was not found in the nvidia knowledge base"
-      );
-
-    const isOutOfScope =
-      normalizedAnswer.includes(
-        "i'm the nvidia enterprise knowledge agent"
-      ) ||
-      normalizedAnswer.includes(
-        "i am the nvidia enterprise knowledge agent"
-      ) ||
-      (
-        normalizedAnswer.includes("only answer questions") &&
-        normalizedAnswer.includes("nvidia")
-      );
-
-    const sources =
-      isNotFound || isOutOfScope
-        ? []
-        : extractSourcesFromText(rawAnswer);
+    const sources = isDataUnavailable(answer, rawAnswer)
+      ? []
+      : extractSourcesFromText(rawAnswer);
 
     return NextResponse.json({
       answer,
