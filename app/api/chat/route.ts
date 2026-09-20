@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DefaultAzureCredential } from "@azure/identity";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const endpoint = process.env.FOUNDRY_AGENT_ENDPOINT;
 
 if (!endpoint) {
@@ -273,10 +276,19 @@ export async function POST(request: NextRequest) {
       ? []
       : extractSourcesFromText(rawAnswer);
 
-    return NextResponse.json({
-      answer,
-      sources,
-    });
+    return NextResponse.json(
+      {
+        answer,
+        sources,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     console.error(
       "Chat route error:",
