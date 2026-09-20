@@ -82,7 +82,7 @@ function cleanAnswer(text: string): string {
     .trim();
 }
 
-function extractSources(data: FoundryResponse, text: string): Source[] {
+function extractSourcesFromText(text: string): Source[] {
   const sources: Source[] = [];
   const seen = new Set<string>();
 
@@ -110,74 +110,7 @@ function extractSources(data: FoundryResponse, text: string): Source[] {
     });
   }
 
-  // Also inspect structured annotations when available
-  const output = data.output ?? [];
-  for (const item of output) {
-    for (const content of item.content ?? []) {
-      for (const annotation of (content.annotations ?? []) as Array<Record<string, unknown>>) {
-        const candidate =
-          annotation.filename ??
-          annotation.file_name ??
-          annotation.title;
-
-        if (typeof candidate === "string" && candidate.trim()) {
-          const raw = candidate.trim();
-          // Never use raw HTTP/Search URLs as titles
-          if (raw.startsWith("http://") || raw.startsWith("https://")) continue;
-          if (raw.toLowerCase() === "source") continue;
-
-          const title = raw.split("/").pop()?.trim() || raw;
-          if (!title || seen.has(title)) continue;
-
-          seen.add(title);
-          const url = getSourceUrl(title);
-          sources.push({
-            id: `source-${sources.length + 1}`,
-            title,
-            ...(url ? { url } : {}),
-          });
-        }
-      }
-    }
-  }
-
   return sources;
-}
-
-function isNotFoundResponse(text: string): boolean {
-  const lower = text.toLowerCase();
-  const patterns = [
-    /couldn['’]?t find (?:that|any) information/i,
-    /could not find (?:that|any) information/i,
-    /can(?:not|['’]t) find (?:that|any) information/i,
-    /unable to find (?:that|any) information/i,
-    /no information (?:was )?found/i,
-    /not found in the (?:connected )?nvidia knowledge base/i,
-    /not (?:mentioned|available|covered) in the (?:connected )?nvidia knowledge base/i,
-    /do not have (?:any )?information/i,
-    /don['’]?t have (?:any )?information/i,
-    /does not contain (?:any )?information/i,
-    /no mention of .* in the (?:connected )?nvidia knowledge base/i,
-  ];
-  return patterns.some((pattern) => pattern.test(lower));
-}
-
-function isOutOfScopeResponse(text: string): boolean {
-  const lower = text.toLowerCase();
-  const patterns = [
-    /nvidia enterprise knowledge agent/i,
-    /only answer questions (?:about|regarding|related to) nvidia/i,
-    /only assist with questions (?:about|regarding|related to) nvidia/i,
-    /only provide information (?:about|regarding|related to) nvidia/i,
-    /can only answer questions about nvidia/i,
-    /can only assist with questions about nvidia/i,
-    /questions about nvidia and information in the (?:connected )?nvidia knowledge base/i,
-    /i am an ai assistant dedicated to nvidia/i,
-    /i am dedicated to nvidia/i,
-    /outside (?:of )?(?:the|my) scope/i,
-    /not related to nvidia/i,
-  ];
-  return patterns.some((pattern) => pattern.test(lower));
 }
 
 export async function POST(request: NextRequest) {
@@ -252,18 +185,49 @@ export async function POST(request: NextRequest) {
             )
             ?.join("\n") ?? "";
 
-    let sources = extractSources(data, rawAnswer);
-    let answer = cleanAnswer(rawAnswer);
+    const answer = cleanAnswer(rawAnswer);
 
-    if (isNotFoundResponse(rawAnswer) || isNotFoundResponse(answer)) {
-      sources = [];
-      answer = "I couldn't find that information in the NVIDIA knowledge base.";
-    } else if (isOutOfScopeResponse(rawAnswer) || isOutOfScopeResponse(answer)) {
-      sources = [];
-    }
+    const normalizedAnswer = answer.toLowerCase();
+
+    const isNotFound =
+      normalizedAnswer.includes(
+        "i couldn't find that information in the nvidia knowledge base"
+      ) ||
+      normalizedAnswer.includes(
+        "i could not find that information in the nvidia knowledge base"
+      ) ||
+      normalizedAnswer.includes(
+        "information was not found in the nvidia knowledge base"
+      ) ||
+      normalizedAnswer.includes(
+        "couldn't find that information"
+      ) ||
+      normalizedAnswer.includes(
+        "could not find that information"
+      );
+
+    const isOutOfScope =
+      normalizedAnswer.includes(
+        "i'm the nvidia enterprise knowledge agent"
+      ) ||
+      normalizedAnswer.includes(
+        "i am the nvidia enterprise knowledge agent"
+      ) ||
+      normalizedAnswer.includes(
+        "only answer questions about nvidia"
+      );
+
+    const sources =
+      isNotFound || isOutOfScope
+        ? []
+        : extractSourcesFromText(rawAnswer);
+
+    const finalAnswer = isNotFound
+      ? "I couldn't find that information in the NVIDIA knowledge base."
+      : answer;
 
     return NextResponse.json({
-      answer,
+      answer: finalAnswer,
       sources,
     });
   } catch (error) {
