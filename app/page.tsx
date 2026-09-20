@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 type Source = {
   id: string;
   title: string;
+  url?: string;
 };
 
 type Message = {
@@ -183,28 +184,65 @@ export default function Home() {
                           </div>
 
                           <div className="grid gap-2 sm:grid-cols-2">
-                            {message.sources.map((source) => (
-                              <div
-                                key={source.id}
-                                className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm">
-                                    📄
-                                  </div>
+                            {message.sources.map((source) =>
+                              source.url ? (
+                                <a
+                                  key={source.id}
+                                  href={source.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="group rounded-xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-white/20 hover:bg-white/[0.06] block"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-start gap-3 min-w-0">
+                                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm">
+                                        📄
+                                      </div>
 
-                                  <div className="min-w-0">
-                                    <div className="truncate text-sm font-medium text-white/85">
-                                      {source.title}
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-1.5 truncate text-sm font-medium text-white/85 group-hover:text-white">
+                                          <span className="truncate">
+                                            {source.title}
+                                          </span>
+                                          <span className="shrink-0 text-xs text-white/40 group-hover:text-white/80">
+                                            ↗
+                                          </span>
+                                        </div>
+
+                                        <div className="mt-1 text-xs text-white/40">
+                                          Official NVIDIA documentation
+                                        </div>
+                                      </div>
                                     </div>
 
-                                    <div className="mt-1 text-xs text-white/35">
-                                      NVIDIA knowledge source
+                                    <span className="shrink-0 self-center text-xs font-medium text-white/40 group-hover:text-white/80 transition">
+                                      View source →
+                                    </span>
+                                  </div>
+                                </a>
+                              ) : (
+                                <div
+                                  key={source.id}
+                                  className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm">
+                                      📄
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <div className="truncate text-sm font-medium text-white/85">
+                                        {source.title}
+                                      </div>
+
+                                      <div className="mt-1 text-xs text-white/35">
+                                        NVIDIA knowledge source
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              )
+                            )}
                           </div>
                         </div>
                       )}
