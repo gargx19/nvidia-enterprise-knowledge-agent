@@ -136,7 +136,7 @@ export default function Home() {
       // retrieval metadata, so it is the authority on whether sources apply.
       // Keep the text check as a fallback for older or malformed responses.
       const hasKnowledgeBaseAnswer =
-        data.hasKnowledgeBaseAnswer === true && !isDataUnavailable(answer);
+        (data.hasKnowledgeBaseAnswer ?? true) && !isDataUnavailable(answer);
       const rawSources: Source[] = Array.isArray(data.sources) ? data.sources : [];
       const validSources = rawSources.filter((s) => {
         if (!s || !s.title) return false;
@@ -145,7 +145,8 @@ export default function Home() {
           clean !== "source" &&
           clean !== "source.pdf" &&
           clean !== "sources" &&
-          clean !== "unknown"
+          clean !== "unknown" &&
+          !clean.startsWith("file-")
         );
       });
       const sources = hasKnowledgeBaseAnswer ? validSources : [];
@@ -283,7 +284,8 @@ export default function Home() {
                             clean !== "source" &&
                             clean !== "source.pdf" &&
                             clean !== "sources" &&
-                            clean !== "unknown"
+                            clean !== "unknown" &&
+                            !clean.startsWith("file-")
                           );
                         }
                       );
